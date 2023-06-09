@@ -1,17 +1,36 @@
 const Hapi = require('@hapi/hapi');
 const MySQL = require('mysql');
 const { nanoid } = require('nanoid');
+const HapiJwt = require('hapi-auth-jwt2');
+
+const Jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const init = async () => {
   const server = Hapi.server({
-    port: 9000,
+    port: 3000,
     host: 'localhost',
+    // port: process.env.PORT||3000,
+    // host: '0.0.0.0',
     routes: {
       cors: {
         origin: ['*'],
       },
     },
   });
+
+await server.register(HapiJwt);
+const secretKey = crypto.randomBytes(32).toString('hex');
+server.auth.strategy('jwt', 'jwt', {
+    key: secretKey,
+    validate: async (decoded, request, h) => {
+      // Perform additional validation checks here if needed
+      // For example, you can check if the user exists in the database or if the token is expired
+  
+      // Return the validation result
+      return { isValid: true };
+    }
+  })
 
 const connection = MySQL.createConnection({
     host: '34.101.224.88',
@@ -22,25 +41,35 @@ const connection = MySQL.createConnection({
 
 function insertUser(id, name, email, password){
     connection.query(`INSERT INTO users (id, name, email, password) VALUES ('${id}', '${name}', '${email}', '${password}')`, function(err, results, fields){
-        console.log("masuk");
         if(err){
-            console.log(err.message);
+            // console.log(err.message);
             return true;
         }
         else{
             return false;
         }
     });
-
 }
 
 function getUser(email, password){
     return new Promise((resolve, reject) => {
         connection.query(`SELECT * FROM users WHERE email='${email}' AND password='${password}'`, (err, result, fields)=>{
-            if(err){
+            if(err){               
                 return reject(err)
             }
-            console.log(result);
+
+            return resolve(result);
+        });
+    })
+}
+
+function getProfile(id){
+    return new Promise((resolve, reject) => {
+        connection.query(`SELECT * FROM users WHERE id='${id}'`, (err, result, fields)=>{
+            if(err){               
+                return reject(err)
+            }
+
             return resolve(result);
         });
     })
@@ -48,7 +77,7 @@ function getUser(email, password){
 
   server.route({
     method: 'POST',
-    path: '/users',
+    path: '/register',
     handler: function(request, h) {
         const {
             name, email, password,
@@ -62,7 +91,7 @@ function getUser(email, password){
         if(!error){
             response = h.response({
             status: 'success',
-            message: 'Successfully added user',
+            message: 'success',
             data: {
                 userId: id,
             },
@@ -73,7 +102,7 @@ function getUser(email, password){
 
         response = h.response({
         status: 'fail',
-        message: 'Failed to add user',
+        message: 'error',
         });
         response.code(400);
         return response;
@@ -81,32 +110,83 @@ function getUser(email, password){
   });
 
   server.route({
-    method: 'GET',
-    path: '/users/{email}/{password}',
-    handler: async function(request, reply) {
-        const {email, password} = request.params;
-        const connect = await getUser(email, password);
-        return{
-            data:{
-                user: connect
-            }
+    method: 'POST',
+    path: '/login',
+    handler: async function(request, h) {
+
+        const {
+            email, password,
+        } = request.payload;
+
+
+        const error = await getUser(email, password);
+        
+        console.log(error[0]);
+      
+        if(error.length>0){
+            console.log(error);
+            const payload = {
+                email: email,
+                user: error[0].id
+              };
+            const token = Jwt.sign(payload, secretKey);
+            response = h.response({
+            status: 'success',
+            message: 'success',
+            data: {
+                user: error[0].id,
+                token: token
+            },
+            });
+            response.code(201);
+            return response;
         }
-        // if(result!==null){
-        //     console.log(result);
-        //     return {
-        //         status: 'success',
-        //         data: {
-        //             result,
-        //         },
-        //     }
-        // }
-        // const response = h.response({
-        // status: 'fail',
-        // message: 'User not found',
-        // });
-        // response.code(404);
-        // return response;
-        //const user = users.filter((user) => (user.email === email && user.password === String(password)))[0];
+
+        response = h.response({
+        status: 'fail',
+        message: 'error',
+        });
+        response.code(400);
+        return response;
+    
+  }});
+
+  server.route({
+    method: 'GET',
+    path: '/user/{id}',
+    options: {
+        auth: 'jwt' // Require authentication using the 'jwt' strategy
+      },
+    handler: async function(request, h) {
+
+        const {
+            id
+        } = request.params;
+        
+        const error = await getProfile(id);
+        
+        console.log(error[0]);
+      
+        if(error.length>0){
+            console.log(error);
+
+            response = h.response({
+            status: 'success',
+            message: 'success',
+            data: {
+                user: error
+            },
+            });
+            response.code(201);
+            return response;
+        }
+
+        response = h.response({
+        status: 'fail',
+        message: 'error',
+        });
+        response.code(400);
+        return response;
     
   }});
 
