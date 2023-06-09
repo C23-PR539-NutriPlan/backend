@@ -35,7 +35,7 @@ server.auth.strategy('jwt', 'jwt', {
 const connection = MySQL.createConnection({
     host: '34.101.224.88',
     user: 'root',
-    password: 'nutriplanhore',
+    password: 'pass',
     database: 'NutriPlan_db'
 })
 
