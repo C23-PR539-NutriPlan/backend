@@ -62,3 +62,5 @@ CREATE TABLE recommendation (
     FOREIGN KEY (userID) REFERENCES users(id),
     FOREIGN KEY (foodID) REFERENCES foods(id)
 );
+
+INSERT INTO foods VALUES ('Sandwich', 'Breads', 147.7, 7.6, 3.2, 10.2, 338.0, 17.0, 1.7, 0.8, 3.2, 'https://media.istockphoto.com/id/1256670482/photo/turkey-sandwich-with-tomato-and-lettuce.jpg?s=612x612&w=0&k=20&c=CPwIFBHQqOob3SNZbegKKjUVL6xkUZgoQ2cxT0jcUrQ=');
