@@ -41,25 +41,10 @@ const connection = MySQL.createConnection({
 })
 
 async function getEmail(email){
-    connection.query(`SELECT * FROM users WHERE email='${email}'`, function(err, results, fields){
-        if(results.length>0){
-            console.log("coy ada")
-            // console.log(err.message);
-            return true;
-        }
-        else{
-            return false;
-        }
-    });
-}
-
-
-async function insertUser(id, name, email, password){
-    const exist = await getEmail(email);
     return new Promise((resolve, reject)=>{
-    if(!exist){
-        connection.query(`INSERT INTO users (id, name, email, password) VALUES ('${id}', '${name}', '${email}', '${password}')`, function(err, results, fields){
-            if(err){
+        connection.query(`SELECT * FROM users WHERE email='${email}'`, function(err, results, fields){
+            if(results.length>0){
+                console.log("coy ada")
                 // console.log(err.message);
                 return resolve(true);
             }
@@ -67,8 +52,28 @@ async function insertUser(id, name, email, password){
                 return resolve(false);
             }
         });
+    });
+}
+
+
+async function insertUser(id, name, email, password){
+    const exist = await getEmail(email);
+    console.log("exist " + exist);
+    return new Promise((resolve, reject)=>{
+    if(!exist){
+        connection.query(`INSERT INTO users (id, name, email, password) VALUES ('${id}', '${name}', '${email}', '${password}')`, function(err, results, fields){
+            if(err){
+                console.log(err.message);
+                return resolve(true);
+            }
+            else{
+                return resolve(false);
+            }
+        });
     }
-    return resolve(true);
+    else{
+        return resolve(true);
+    }
 });
 }
 
@@ -289,17 +294,33 @@ async function getFoodLike(foodID, userID){
 }
 
 async function postLike(foodID, userID){
-    return new Promise((resolve, reject) => {
-        connection.query(`INSERT INTO preference (userID, foodID) VALUES ('${userID}', ${foodID})`, (err, result, fields)=>{
-            if(err){           
-                console.log(err);  
-                return resolve(false);
-            }
-            
-            return resolve(true);
-        });
+    const liked = await getFoodLike(foodID, userID);
+    console.log("liked "+liked);
+        console.log("delete");
+        return new Promise((resolve, reject) => {
+            if(liked){
+                console.log(liked + " disini");
+            connection.query(`DELETE FROM preference where userID ='${userID}' AND foodID= ${foodID}`, (err, result, fields)=>{
+                if(err){           
+                    console.log(err);  
+                    return resolve(false);
+                }
+                
+                return resolve(true);
+            });
+        }
+        else{
+            connection.query(`INSERT INTO preference (userID, foodID) VALUES ('${userID}', ${foodID})`, (err, result, fields)=>{
+                if(err){           
+                    console.log(err);  
+                    return resolve(false);
+                }
+                
+                return resolve(true);
+            });
+        }
+
     })
-    
 }
 
   server.route({
@@ -314,8 +335,7 @@ async function postLike(foodID, userID){
 
         console.log("kok masuk");
         error = await insertUser(id, name, email, password);
-
-        console.log(error)
+        console.log(error);
         if(!error){
             response = h.response({
             status: 'success',
@@ -410,7 +430,8 @@ async function postLike(foodID, userID){
                         weightGoal: error[0].weightGoal,
                         gender: error[0].gender,
                         age: error[0].age,
-                        bmi: error[0].bmi
+                        bmi: error[0].bmi,
+                        bmr: error[0].caloriesNeeded
                     }
                 ],
             });
@@ -552,6 +573,7 @@ async function postLike(foodID, userID){
             story: {
                 id: recommendation[0].id,
                 name: recommendation[0].name,
+                calories: recommendation[0].calories,
                 fatContent: recommendation[0].fatContent,
                 cholesterolContent: recommendation[0].cholesterolContent,
                 carbohydrateContent: recommendation[0].carbohydrateContent,
