@@ -6,6 +6,7 @@ const HapiJwt = require('hapi-auth-jwt2');
 const Jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { resolve } = require('path');
+const axios = require('axios');
 
 const init = async () => {
   const server = Hapi.server({
@@ -36,7 +37,7 @@ server.auth.strategy('jwt', 'jwt', {
 const connection = MySQL.createConnection({
     host: '34.101.224.88',
     user: 'root',
-    password: 'pass',
+    password: 'nutriplanhore',
     database: 'NutriPlan_db'
 })
 
@@ -112,6 +113,48 @@ function postForm(height, weight, weightGoal, gender, age, bmi, id, bmr){
         });
     })
 }
+
+async function getUserAllergies(id){
+    return new Promise((resolve, reject) => {
+    let allergiesName = [];
+        connection.query(`SELECT ingredients.name FROM allergies INNER JOIN ingredients ON ingredients.id = ingredientsID where allergies.userID='${id}'`, (err, result, fields)=>{
+            if(result.length>0){               
+                for(let i=0; i<result.length; i++){
+                    allergiesName.push(result[i].name);
+                    if(i==result.length-1){
+                        return resolve(allergiesName);
+                    }
+                }
+            }
+        });
+    })
+}
+
+async function getUserPreferences(id){
+    const userAllergies = await getUserAllergies(id);
+    return new Promise((resolve, reject) => {
+        let prefrencesName = [];
+        connection.query(`SELECT foods.name FROM preference INNER JOIN foods ON foods.id = preference.foodID where preference.userID='${id}'`, (err, result, fields)=>{
+            if(result.length>0){               
+                for(let i =0; i<result.length; i++){
+                    prefrencesName.push(result[i].name);
+
+                    if(i==result.length-1){
+                        break;
+                    }
+                }
+                const userData = {
+                    user_allergies: userAllergies,
+                    user_preferences: prefrencesName
+                }
+
+                return resolve(userData);
+            }
+        });
+        
+    })
+}
+
 
 function getAllergiesID(allergies){
     return new Promise((resolve, reject) => {
@@ -252,14 +295,19 @@ async function postPreferencesID(preferences, id){
 }
 
 async function getAllFoodRecomendation(id){
+    const datas = await getUserPreferences(id);
     return new Promise((resolve, reject) => {
         connection.query(`SELECT foods.id, name, calories, image FROM foods INNER JOIN recommendation ON foods.ID = recommendation.foodID WHERE recommendation.userID = '${id}'`, (err, result, fields)=>{
             if(err){   
                 console.log(err);            
                 return reject(err);
             }
-            console.log(result[0]);
-            return resolve(result);
+            const userDatas = {
+                user_allergies : datas.user_allergies,
+                user_preferences : datas.user_preferences,
+                user_recommendation: result
+            }
+            return resolve(userDatas);
         });
     })
     
@@ -513,9 +561,12 @@ async function postLike(foodID, userID){
             id
         } = request.params;
         
+
         const listStory = await getAllFoodRecomendation(id);
+
+        console.log(listStory);
       
-        if(listStory.length>0){
+        if(listStory){
             console.log(listStory);
 
             response = h.response({
