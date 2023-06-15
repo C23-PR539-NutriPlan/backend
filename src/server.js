@@ -386,7 +386,7 @@ async function getUserCalories(id){
                 return reject(err)
             }
 
-            return resolve(result[0].caloriesNeeded);
+            return resolve(result[0].caloriesNeeded/3);
         });
     })
 }
