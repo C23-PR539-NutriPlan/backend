@@ -22,7 +22,7 @@ const init = async () => {
   });
 
 await server.register(HapiJwt);
-const secretKey = crypto.randomBytes(32).toString('hex');
+const secretKey = "";
 server.auth.strategy('jwt', 'jwt', {
     key: secretKey,
     validate: async (decoded, request, h) => {
@@ -470,6 +470,9 @@ async function getUserCalories(id){
   server.route({
     method: 'GET',
     path: '/user/{id}',
+    options: {
+        auth: 'jwt', // Apply JWT authentication to this route
+      },
     handler: async function(request, h) {
 
         const {
@@ -519,6 +522,9 @@ async function getUserCalories(id){
   server.route({
     method: 'POST',
     path: '/user/form/{id}',
+    options: {
+        auth: 'jwt', // Apply JWT authentication to this route
+      },
     handler: async function(request, h) {
 
         const {
@@ -576,6 +582,9 @@ async function getUserCalories(id){
   server.route({
     method: 'GET',
     path: '/food/all/{id}',
+    options: {
+        auth: 'jwt', // Apply JWT authentication to this route
+      },
     handler: async function(request, h) {
         const {
             id
@@ -624,6 +633,9 @@ async function getUserCalories(id){
   server.route({
     method: 'GET',
     path: '/food/{foodID}/{userID}',
+    options: {
+        auth: 'jwt', // Apply JWT authentication to this route
+      },
     handler: async function(request, h) {
         const {
             foodID, userID
@@ -669,6 +681,9 @@ async function getUserCalories(id){
   server.route({
     method: 'POST',
     path: '/like',
+    options: {
+        auth: 'jwt', // Apply JWT authentication to this route
+      },
     handler: async function(request, h) {
 
         const {
