@@ -115,6 +115,7 @@ function postForm(height, weight, weightGoal, gender, age, bmi, id, bmr){
 }
 
 async function getUserAllergies(id){
+    const userCal = await getUserCalories(id);
     return new Promise((resolve, reject) => {
     let allergiesName = [];
         connection.query(`SELECT ingredients.name FROM allergies INNER JOIN ingredients ON ingredients.id = ingredientsID where allergies.userID='${id}'`, (err, result, fields)=>{
@@ -122,10 +123,15 @@ async function getUserAllergies(id){
                 for(let i=0; i<result.length; i++){
                     allergiesName.push(result[i].name);
                     if(i==result.length-1){
-                        return resolve(allergiesName);
+                        break;
                     }
                 }
             }
+            const usersDatas = {
+                user_calories: userCal,
+                user_allergies: allergiesName
+            }
+            return resolve(usersDatas);
         });
     })
 }
@@ -143,13 +149,14 @@ async function getUserPreferences(id){
                         break;
                     }
                 }
-                const userData = {
-                    user_allergies: userAllergies,
-                    user_preferences: prefrencesName
-                }
-
-                return resolve(userData);
             }
+            const userData = {
+                user_calories: userAllergies.user_calories,
+                user_allergies: userAllergies.user_allergies,
+                user_preferences: prefrencesName
+            }
+
+            return resolve(userData);
         });
         
     })
@@ -297,12 +304,13 @@ async function postPreferencesID(preferences, id){
 async function getAllFoodRecomendation(id){
     const datas = await getUserPreferences(id);
     return new Promise((resolve, reject) => {
-        connection.query(`SELECT foods.id, name, calories, image FROM foods INNER JOIN recommendation ON foods.ID = recommendation.foodID WHERE recommendation.userID = '${id}'`, (err, result, fields)=>{
+        connection.query(`SELECT foods.id, name, calories FROM foods INNER JOIN recommendation ON foods.ID = recommendation.foodID WHERE recommendation.userID = '${id}'`, (err, result, fields)=>{
             if(err){   
                 console.log(err);            
                 return reject(err);
             }
             const userDatas = {
+                user_calories: datas.user_calories,
                 user_allergies : datas.user_allergies,
                 user_preferences : datas.user_preferences,
                 user_recommendation: result
@@ -315,7 +323,7 @@ async function getAllFoodRecomendation(id){
 
 async function getFoodRecomendation(foodID){
     return new Promise((resolve, reject) => {
-        connection.query(`SELECT foods.id, name, calories, fatContent, cholesterolContent, carbohydrateContent, fiberContent, sugarContent, proteinContent, image FROM foods WHERE foods.ID=${foodID}`, (err, result, fields)=>{
+        connection.query(`SELECT foods.id, name, calories, fatContent, cholesterolContent, carbohydrateContent, fiberContent, sugarContent, proteinContent FROM foods WHERE foods.ID=${foodID}`, (err, result, fields)=>{
             if(err){   
                 console.log(err);            
                 return reject(err);
@@ -368,6 +376,18 @@ async function postLike(foodID, userID){
             });
         }
 
+    })
+}
+
+async function getUserCalories(id){
+    return new Promise((resolve, reject) => {
+        connection.query(`SELECT caloriesNeeded FROM users WHERE id='${id}'`, (err, result, fields)=>{
+            if(err){               
+                return reject(err)
+            }
+
+            return resolve(result[0].caloriesNeeded);
+        });
     })
 }
 
@@ -561,7 +581,6 @@ async function postLike(foodID, userID){
             id
         } = request.params;
         
-
         const listStory = await getAllFoodRecomendation(id);
 
         console.log(listStory);
@@ -631,7 +650,6 @@ async function postLike(foodID, userID){
                 fiberContent: recommendation[0].fiberContent,
                 sugarContent: recommendation[0].sugarContent,
                 proteinContent: recommendation[0].proteinContent,
-                image: recommendation[0].image,
                 like: like
             }
             });
