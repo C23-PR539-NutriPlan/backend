@@ -45,8 +45,6 @@ async function getEmail(email){
     return new Promise((resolve, reject)=>{
         connection.query(`SELECT * FROM users WHERE email='${email}'`, function(err, results, fields){
             if(results.length>0){
-                console.log("coy ada")
-                // console.log(err.message);
                 return resolve(true);
             }
             else{
@@ -59,7 +57,6 @@ async function getEmail(email){
 
 async function insertUser(id, name, email, password){
     const exist = await getEmail(email);
-    console.log("exist " + exist);
     return new Promise((resolve, reject)=>{
     if(!exist){
         connection.query(`INSERT INTO users (id, name, email, password) VALUES ('${id}', '${name}', '${email}', '${password}')`, function(err, results, fields){
@@ -169,9 +166,7 @@ function getAllergiesID(allergies){
         for(let i=0; i<allergies.length; i++){
             connection.query(`SELECT id FROM ingredients where name='${allergies[i]}'`, (err, result, fields)=>{
                 if(!err){               
-                    console.log(result[0].id);
                     allergiesID.push(result[0].id);
-                    console.log(allergies.length + " bertambah");
                 }
                 if(i==allergies.length-1){
                     return resolve(allergiesID);
@@ -185,11 +180,8 @@ function getAllergiesID(allergies){
 async function postAllergies(allergies, id){
     const allergiesID = await getAllergiesID(allergies);
     return new Promise((resolve, reject) => {
-        console.log("lengthnya " + allergiesID.length);
-        console.log("get id alergi")
         const insertAllergyPromises = allergiesID.map((allergyID) => {
             return new Promise((resolve, reject) => {
-                console.log("masuk insert");
               connection.query(
                 `INSERT INTO allergies (userID, ingredientsID) VALUES ('${id}', '${allergyID}')`,
                 (err, result, fields) => {
@@ -232,11 +224,9 @@ function getPreferencesName(preferences){
 
 async function postPreferences(preferences){
     const listUnstoredPreferences = await getPreferencesName(preferences);
-    console.log("preferensi yang belum ada "+listUnstoredPreferences.length);
     return new Promise((resolve, reject) => {
         const insertPreferencesNamePromises = listUnstoredPreferences.map((preferenceName) => {
             return new Promise((resolve, reject) => {
-                console.log("masuk insert lagi");
                 connection.query(`INSERT INTO foods (name) VALUES ('${preferenceName}')`, (err, result, fields)=>{
                     if(err){               
                         reject(err);
@@ -263,7 +253,6 @@ async function getPreferencesID(preferences){
         let preferencesID = [];
         for(let i=0; i<preferences.length; i++){
             connection.query(`SELECT id FROM foods where name='${preferences[i]}'`, (err, result, fields)=>{
-                    console.log("id preferensi "+result[0]);
                     preferencesID.push(result[0].id);
                     if(preferences.length-1==i){
                         return resolve(preferencesID);
@@ -280,7 +269,6 @@ async function postPreferencesID(preferences, id){
     return new Promise((resolve, reject) => {
         const insertPreferencesIDPromises = preferencesID.map((preferenceID) => {
             return new Promise((resolve, reject) => {
-                console.log("masuk insert lagi");
                 connection.query(`INSERT INTO preference (userID, foodID) VALUES ('${id}', '${preferenceID}')`, (err, result, fields)=>{
                     if(err){               
                         console.log(err);
@@ -306,7 +294,7 @@ async function getAllFoodRecomendation(id){
     return new Promise((resolve, reject) => {
         connection.query(`SELECT foods.id, name, calories FROM foods INNER JOIN recommendation ON foods.ID = recommendation.foodID WHERE recommendation.userID = '${id}'`, (err, result, fields)=>{
             if(err){   
-                console.log(err);            
+                console.log(err);           
                 return reject(err);
             }
             const userDatas = {
@@ -339,7 +327,6 @@ async function getFoodLike(foodID, userID){
     return new Promise((resolve, reject) => {
         connection.query(`SELECT * FROM preference WHERE foodID=${foodID} AND userID='${userID}'`, (err, result, fields)=>{
             if(result.length>0){           
-                console.log("masuk kok");  
                 return resolve(true);
             }
             
@@ -351,11 +338,8 @@ async function getFoodLike(foodID, userID){
 
 async function postLike(foodID, userID){
     const liked = await getFoodLike(foodID, userID);
-    console.log("liked "+liked);
-        console.log("delete");
         return new Promise((resolve, reject) => {
             if(liked){
-                console.log(liked + " disini");
             connection.query(`DELETE FROM preference where userID ='${userID}' AND foodID= ${foodID}`, (err, result, fields)=>{
                 if(err){           
                     console.log(err);  
@@ -401,9 +385,7 @@ async function getUserCalories(id){
     
         const id = nanoid(16);
 
-        console.log("kok masuk");
         error = await insertUser(id, name, email, password);
-        console.log(error);
         if(!error){
             response = h.response({
             status: 'success',
@@ -437,10 +419,8 @@ async function getUserCalories(id){
 
         const error = await getUser(email, password);
         
-        console.log(error[0]);
       
         if(error.length>0){
-            console.log(error);
             const payload = {
                 email: email,
                 user: error[0].id
@@ -481,10 +461,8 @@ async function getUserCalories(id){
         
         const error = await getProfile(id);
         
-        console.log(error[0]);
       
         if(error.length>0){
-            console.log(error);
 
             response = h.response({
             status: 'success',
@@ -531,14 +509,12 @@ async function getUserCalories(id){
             id
         } = request.params;
         
-        console.log("req param");
 
         const {
             height, weight, weightGoal, gender, age, allergies, preferences
         } = request.payload;
 
         const bmi = (weight/(height*height))*10000;
-        console.log(bmi);
         let bmr = 0;
         if(gender==="Female"){
             bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
@@ -546,20 +522,15 @@ async function getUserCalories(id){
         else{
             bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
         }
-        console.log("req payload");
 
         const form = await postForm(height, weight, weightGoal, gender, age, bmi, id, bmr);
 
-        console.log("postForm");
 
         const allergiesForm = await postAllergies(allergies, id);
-        console.log("post allergies");
 
         const postUnstoredPreferences = await postPreferences(preferences);
-        console.log("post unstored preferences");
 
         const postPreferencesIDD = await postPreferencesID(preferences, id);
-        console.log("post id preferensi");
 
         if(postPreferencesID){
             response = h.response({
@@ -592,10 +563,8 @@ async function getUserCalories(id){
         
         const listStory = await getAllFoodRecomendation(id);
 
-        console.log(listStory);
       
         if(listStory){
-            console.log(listStory);
 
             response = h.response({
             status: 'success',
@@ -644,10 +613,8 @@ async function getUserCalories(id){
         const recommendation = await getFoodRecomendation(foodID);
 
         const like = await getFoodLike(foodID, userID);
-        console.log(like);
       
         if(recommendation.length>0){
-            console.log(recommendation);
 
             response = h.response({
             status: 'success',
