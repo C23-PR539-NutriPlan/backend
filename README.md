@@ -16,4 +16,4 @@
 
 ## How to deploy:
 1. git clone https://github.com/C23-PR539-NutriPlan/backend.git
-2. run gcloud app deploy on cloud shell in the backend directory
+2. run "gcloud app deploy" on cloud shell in the backend directory
