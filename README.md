@@ -1,7 +1,7 @@
 # backend
 
 ### Deployed Link for backend API to mobile: https://nutriplan-c23-pr539.et.r.appspot.com
-the link above is only an API service, refer to the API documentation for futher usage
+the link above is only an API service, refer to the API documentation for further usage
 
 ### Refer to this API documentation for API paths: https://docs.google.com/document/d/1TnBC2Sv2o6QI_wG4TCA7-nEBVItle4KMuL7BAeO7Sws/edit?usp=sharing
 
